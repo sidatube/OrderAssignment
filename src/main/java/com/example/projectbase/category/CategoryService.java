@@ -9,7 +9,7 @@ import java.util.Optional;
 @Service
 public class CategoryService {
     @Autowired
-    private CategoryRepository categoryRepository;
+     CategoryRepository categoryRepository;
     public Category save(Category category){
         return categoryRepository.save(category);
     }
@@ -19,13 +19,13 @@ public class CategoryService {
     public List<Category> getList(){
         return categoryRepository.findAll();
     }
-    public Optional<Category> findById(int id){
+    public Optional<Category> findById(String id){
         return categoryRepository.findById(id);
     }
     public Category update(Optional<Category> optional,Category update){
         Category item = optional.get();
         item.setName(update.getName());
-        item.setStatus(update.getStatus());
+//        item.setStatus(update.getStatus());
         return categoryRepository.save(item);
     }
 }

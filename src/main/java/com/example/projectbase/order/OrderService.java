@@ -5,10 +5,20 @@ import com.example.projectbase.orderDetail.OrderDetailId;
 import com.example.projectbase.product.Product;
 import com.example.projectbase.product.ProductRepository;
 import com.example.projectbase.product.ProductService;
+import com.example.projectbase.search.OrderSpecification;
+import com.example.projectbase.search.SearchCriteria;
+import com.example.projectbase.search.SearchCriteriaOperator;
+import com.example.projectbase.util.StringHelper;
 import com.github.javafaker.Faker;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -20,45 +30,43 @@ public class OrderService {
     private OrderRepository orderRepository;
     @Autowired
     private ProductRepository productRepository;
-    public Order save(Order order){
-        return orderRepository.save(order);
-    }
-    public List<Order> saveAll(List<Order> orders){
-        return orderRepository.saveAll(orders);
-    }
+
     public List<Order> getList(){
         return orderRepository.findAll();
     }
-    public Optional<Order> findById(int id){
+    public Optional<Order> findById(String  id){
         return orderRepository.findById(id);
     }
 
-    public Order addOrder() {
-        List<Product> products = productRepository.findAll();
-        Order order = new Order();
-        OrderDetail orderDetail = new OrderDetail();
-        OrderDetailId orderDetailId = new OrderDetailId();
-        Set<OrderDetail> orderDetailList = new HashSet<>();
-
-        Faker faker = new Faker();
-        order.setCustomerId(faker.number().randomDigitNotZero());
-        Product randomProduct=products.get(faker.random().nextInt(0,products.size()-1));
-        orderDetailId.setOrderId(order.getId());
-        orderDetailId.setProductId(randomProduct.getId());
-        orderDetail.setId(orderDetailId);
-        orderDetail.setUnitPrice(faker.number().randomDouble(2,10,100));
-        orderDetail.setQuantity(faker.number().randomDigitNotZero());
-        orderDetail.setOrder(order);
-        orderDetail.setProduct(randomProduct);
-        orderDetailList.add(orderDetail);
-        order.setOrderDetails(orderDetailList);
-        double total = 0;
-        for (OrderDetail item : order.getOrderDetails()
-             ) {
-            total+= item.getQuantity()*item.getUnitPrice();
+    public Object findAll(int page, int limit, String productName, String userName, String dateFrom, String dateTo, String userId, int status,boolean desc) {
+        Specification<Order> specification = Specification.where(null);
+        if (!userId.isEmpty()) {
+            OrderSpecification spec = new OrderSpecification(new SearchCriteria("userId", SearchCriteriaOperator.Equals, userId));
+            specification = specification.and(spec);
         }
-        order.setTotalPrice(total);
+        if (!productName.isEmpty()) {
+            OrderSpecification spec = new OrderSpecification(new SearchCriteria("product", SearchCriteriaOperator.Join, productName));
+            specification = specification.and(spec);
+        }if (!dateFrom.isEmpty()) {
+            LocalDateTime from = StringHelper.toDateTime(dateFrom);
+            OrderSpecification spec = new OrderSpecification(new SearchCriteria("createdAt", SearchCriteriaOperator.Less_Than_Or_Equals, from));
+            specification = specification.and(spec);
+        }
+        if (!dateTo.isEmpty()) {
+            LocalDateTime to = StringHelper.toDateTime(dateTo);
+            OrderSpecification spec = new OrderSpecification(new SearchCriteria("createdAt", SearchCriteriaOperator.Greater_Than_Or_Equals, to));
+            specification = specification.and(spec);
+        }
+        if (!userName.isEmpty()) {
+            OrderSpecification spec = new OrderSpecification(new SearchCriteria("user", SearchCriteriaOperator.Join, userName));
+            specification = specification.and(spec);
+        }
+        specification = specification.and(new OrderSpecification(new SearchCriteria("status", SearchCriteriaOperator.Equals, status)));
+        Sort sort =Sort.by("createdAt");
+        if (desc) {
+           sort= Sort.by("createAt").descending();
+        }
+        return orderRepository.findAll(specification, PageRequest.of(page-1,limit,sort ));
 
-        return orderRepository.save(order);
     }
 }

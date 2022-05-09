@@ -13,7 +13,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import javax.persistence.Column;
 import javax.persistence.EntityListeners;
 import javax.persistence.MappedSuperclass;
+import java.sql.Date;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -21,10 +23,14 @@ import java.sql.Timestamp;
 @NoArgsConstructor
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
-public class BaseEntity {
-    @CreationTimestamp
-    private Timestamp CreateAt;
-    @UpdateTimestamp
-    private Timestamp UpdatedAt;
-    private int status;
+public abstract class BaseEntity {
+    @CreatedDate
+    private LocalDateTime createdAt;
+    @LastModifiedDate
+    private LocalDateTime updatedAt;
+    private LocalDateTime deletedAt;
+
+    private String createdBy;
+    private String updatedBy;
+    private String deletedBy;
 }
